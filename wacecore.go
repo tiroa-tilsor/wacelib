@@ -233,6 +233,7 @@ func CheckTransaction(transactionID, decisionPlugin string, wafParams map[string
 // removing the transaction sync model results
 func CloseTransaction(transactionID string) {
 	plugins.CloseTransaction(transactionID)
+	analysisMap.Delete(transactionID)
 }
 
 // Init initializes the WACE core with the given metric meter

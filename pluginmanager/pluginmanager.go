@@ -207,6 +207,8 @@ func (p *PluginManager) CloseTransaction(transactionId string) {
 			transactionMap.(*sync.Map).Delete(key)
 			return true
 		})
+		p.syncModelsChannels.Delete(transactionId)
+		p.results.Delete(transactionId)
 	}
 }
 
@@ -234,6 +236,7 @@ func (p *PluginManager) RemoveAsyncModelChannel(transactionId string, t cf.Model
 		})
 		if remainChannels == 0 {
 			p.asyncModelsChannels.Delete(transactionId)
+			p.results.Delete(transactionId)
 		}
 	} else {
 		logger := lg.Get()
