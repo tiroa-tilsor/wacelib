@@ -208,6 +208,15 @@ func (p *PluginManager) CloseTransaction(transactionId string) {
 			return true
 		})
 		p.syncModelsChannels.Delete(transactionId)
+		resultsMap, ok := p.results.Load(transactionId)
+		if !ok {
+			logger.TPrintf(lg.ERROR, transactionId, "Results for transaction %s not found", transactionId)
+		} else {
+			resultsMap.(*sync.Map).Range(func(key, value interface{}) bool {
+				resultsMap.(*sync.Map).Delete(key)
+				return true
+			})
+		}
 		p.results.Delete(transactionId)
 	}
 }
