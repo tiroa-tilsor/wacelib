@@ -204,6 +204,9 @@ func (p *PluginManager) CloseTransaction(transactionId string) {
 		logger.TPrintf(lg.ERROR, transactionId, "Transaction %s not found", transactionId)
 	} else {
 		transactionMap.(*sync.Map).Range(func(key, value interface{}) bool {
+			ch := value.(chan ModelStatus)
+            close(ch)
+            for range ch {}
 			transactionMap.(*sync.Map).Delete(key)
 			return true
 		})
@@ -237,7 +240,15 @@ func (p *PluginManager) AddModelChannel(transactionId string, t cf.ModelPluginTy
 func (p *PluginManager) RemoveAsyncModelChannel(transactionId string, t cf.ModelPluginType) {
 	typeModel, ok := p.asyncModelsChannels.Load(transactionId)
 	if ok {
-		typeModel.(*sync.Map).Delete(t.String())
+		channelMap := typeModel.(*sync.Map)
+        ch, channelOk := channelMap.Load(t.String())
+
+        if channelOk {
+			close(ch.(chan ModelStatus))
+			for range ch.(chan ModelStatus) {}
+            channelMap.Delete(t.String())
+        }
+
 		remainChannels := 0
 		typeModel.(*sync.Map).Range(func(key, value interface{}) bool {
 			remainChannels++
@@ -245,7 +256,6 @@ func (p *PluginManager) RemoveAsyncModelChannel(transactionId string, t cf.Model
 		})
 		if remainChannels == 0 {
 			p.asyncModelsChannels.Delete(transactionId)
-			p.results.Delete(transactionId)
 		}
 	} else {
 		logger := lg.Get()

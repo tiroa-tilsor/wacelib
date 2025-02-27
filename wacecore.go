@@ -233,7 +233,16 @@ func CheckTransaction(transactionID, decisionPlugin string, wafParams map[string
 // removing the transaction sync model results
 func CloseTransaction(transactionID string) {
 	plugins.CloseTransaction(transactionID)
-	analysisMap.Delete(transactionID)
+	value, ok := analysisMap.Load(transactionID)
+	logger := lg.Get()
+	
+	if !ok {
+		logger.TPrintf(lg.ERROR, transactionID, "Analysis for transaction %s not found", transactionID)
+	} else {
+		close(value.(*transactionSync).Channel)
+		for range value.(*transactionSync).Channel {}
+		analysisMap.Delete(transactionID)
+	}
 }
 
 // Init initializes the WACE core with the given metric meter
